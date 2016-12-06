@@ -7,12 +7,13 @@ import android.os.Bundle;
 import android.support.annotation.RequiresApi;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.SwitchCompat;
-import android.view.Menu;
-import android.view.MenuItem;
+import android.support.v7.widget.Toolbar;
 import android.view.View;
 import android.widget.Button;
-import android.widget.CompoundButton;
+import android.widget.EditText;
+import android.widget.ImageButton;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import java.io.BufferedReader;
 import java.io.FileInputStream;
@@ -21,14 +22,21 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 import droidninja.filepicker.FilePickerBuilder;
 import droidninja.filepicker.FilePickerConst;
 
+
 public class MainActivity extends AppCompatActivity {
     private static final String TAG = "MainActivity";
-    private Button btn_open;
+    private Button btn_open, btn_reset, btn_check_search;
+    private ImageButton btn_search;
+    private EditText et_search;
     private TextView result, list_result;
     public int errorWordCount = 0;
     public int errorWordCountByDatabase = 0;
@@ -40,13 +48,21 @@ public class MainActivity extends AppCompatActivity {
     private int errorWordCountByNguyenAmDatabase;
     private List<String> dbAmTiet;
     private SwitchCompat switchCompat;
+    private Set<String> listPath = new HashSet<>();
+    private Map<String, String> mapPath = new HashMap<>();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
+        setSupportActionBar(toolbar);
         btn_open = (Button) findViewById(R.id.btn_open);
+        btn_reset = (Button) findViewById(R.id.btn_reset);
+        btn_check_search = (Button) findViewById(R.id.btn_check_search);
+        btn_search = (ImageButton) findViewById(R.id.btn_search);
         result = (TextView) findViewById(R.id.result);
+        et_search = (EditText) findViewById(R.id.et_search);
         list_result = (TextView) findViewById(R.id.list);
         btn_open.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -58,34 +74,84 @@ public class MainActivity extends AppCompatActivity {
 
             }
         });
-        dbString = FileUtil.loadFileFromRaw(this, R.raw.db);
-//        dbString = getVietnamese(dbString);
-//        //Split db
-//        Set<String> set = new HashSet<>();
-//        String dbs[] = dbString.split(" ");
-//        for (String db : dbs) {
-//            String tmp="";
-//            for (int i = 0; i < db.length(); i++) {
-//                if (!phuam.contains(""+db.charAt(i))){
-//                    tmp=db.substring(i, db.length());
-//                    set.add(tmp);
-//                    break;
-//                }
-//            }
-//        }
-//
-//        for (String s : set) {
-//            test+=" "+s;
-//        }
-////        Log.d(TAG, "onCreate: "+test);
-//
-//        int maxLogSize = 1000;
-//        for(int i = 0; i <= test.length() / maxLogSize; i++) {
-//            int start = i * maxLogSize;
-//            int end = (i+1) * maxLogSize;
-//            end = end > test.length() ? test.length() : end;
-//            Log.v(TAG, test.substring(start, end));
-//        }
+        btn_search.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                String input = et_search.getText().toString().replace("\\s+", " ").trim();
+                //TODO: Search
+                for (Map.Entry<String, String> entry : mapPath.entrySet()) {
+                    if (entry.getValue().contains(input)) {
+                        list_result.append(entry.getKey() + ": \t" + input + "\n");
+                    }else{
+                        String[] arrays = input.split(" ");
+                        if (arrays.length > 1) {
+                            input="";
+                            for (int i = 0; i < arrays.length-1; i++) {
+                                input+=arrays[i]+" ";
+                            }
+                            if (entry.getValue().contains(input.trim())) {
+                                list_result.append(entry.getKey() + ": \t" + input + "\n");
+                            }
+                        }
+                    }
+                }
+            }
+        });
+        btn_reset.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                result.setText("");
+                list_result.setText("");
+                errorWordCount = 0;
+                errorWordCountByDatabase = 0;
+                wordCount = 0;
+            }
+        });
+        btn_check_search.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                String input = et_search.getText().toString().replace("\\s+", " ").trim();
+                Toast.makeText(MainActivity.this, input, Toast.LENGTH_SHORT).show();
+                list_result.append(processLine(input));
+            }
+        });
+//        dbString = FileUtil.loadFileFromRaw(this, R.raw.db);
+/*
+
+        dbString = getVietnamese(dbString);
+        //Split db
+        Set<String> set = new HashSet<>();
+        String dbs[] = dbString.split(" ");
+        for (String db : dbs) {
+            String tmp="";
+            for (int i = 0; i < db.length(); i++) {
+                char a=db.charAt(i);
+                if (!phuam.contains(""+a)){
+                    if (i==1 && a=='i' && db.charAt(0)=='g'){
+                        continue;
+                    }else {
+                        tmp = db.substring(i, db.length());
+                        set.add(tmp);
+                    }
+                    break;
+                }
+            }
+        }
+
+        for (String s : set) {
+            test+=" "+s;
+        }
+//        Log.d(TAG, "onCreate: "+test);
+
+        int maxLogSize = 1000;
+        for(int i = 0; i <= test.length() / maxLogSize; i++) {
+            int start = i * maxLogSize;
+            int end = (i+1) * maxLogSize;
+            end = end > test.length() ? test.length() : end;
+            Log.v(TAG, test.substring(start, end));
+        }
+*/
+
 
         dbAmTiet = Arrays.asList(FileUtil.loadFileFromRaw(this, R.raw.db3).split(" "));
         //init rule
@@ -123,11 +189,11 @@ public class MainActivity extends AppCompatActivity {
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         if (resultCode == RESULT_OK) {
             if (requestCode == FilePickerConst.REQUEST_CODE_DOC) {
-                ArrayList<String> docPaths = new ArrayList<>();
-                docPaths.addAll(data.getStringArrayListExtra(FilePickerConst.KEY_SELECTED_DOCS));
-                for (String docPath : docPaths) {
+//                ArrayList<String> docPaths = new ArrayList<>();
+                listPath = new HashSet<>();
+                listPath.addAll(data.getStringArrayListExtra(FilePickerConst.KEY_SELECTED_DOCS));
+                for (String docPath : listPath) {
                     new ReadFileAsync(docPath).execute();
-
                 }
             }
         }
@@ -144,12 +210,14 @@ public class MainActivity extends AppCompatActivity {
         protected Void doInBackground(Void... voids) {
             try {
                 InputStream inputStream = new FileInputStream(path);
-                BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream, "UTF-16LE"));
+                BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream, "UTF-8"));
                 StringBuilder stringBuilder = new StringBuilder();
                 String line;
                 while ((line = reader.readLine()) != null) {
+                    stringBuilder.append(line);
                     publishProgress(processLine(line));
                 }
+                mapPath.put(path, stringBuilder.toString());
                 inputStream.close();
                 reader.close();
             } catch (IOException e) {
@@ -165,9 +233,8 @@ public class MainActivity extends AppCompatActivity {
 
         @Override
         protected void onPostExecute(Void v) {
-            result.setText("With DB: " + errorWordCount + "/" + wordCount +
-                    ", WithoutDB: " + (errorWordCount - errorWordCountByDatabase) + "/" + wordCount +
-                    " " + errorWordCountByNguyenAmDatabase);
+            result.setText("Error Count: " + errorWordCount + "/" + wordCount
+                    + " - " + errorWordCountByNguyenAmDatabase);
         }
     }
 
@@ -218,39 +285,14 @@ public class MainActivity extends AppCompatActivity {
         String out = "";
         String charNotInTV = "wzjf";
         for (int i = 0; i < x.length(); i++) {
-            if (!Character.isLetter(x.charAt(i)) || charNotInTV.contains("" + x.charAt(i))) {
-                out += " ";
-            } else {
+            if ((Character.isLetter(x.charAt(i)) && !charNotInTV.contains("" + x.charAt(i))) || Character.isDigit(x.charAt(i))) {
                 out += "" + x.charAt(i);
+            } else {
+                out += " ";
             }
         }
         return out.replaceAll("\\s+", " ").trim();
     }
-
-
-
-    @Override
-    public boolean onCreateOptionsMenu(Menu menu) {
-        getMenuInflater().inflate(R.menu.menu_main, menu);
-        MenuItem item = menu.findItem(R.id.action_switch);
-        item.setActionView(R.layout.menu_item_switch);
-        switchCompat = (SwitchCompat) item.getActionView().findViewById(R.id.switch_compat);
-        switchCompat.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
-            @Override
-            public void onCheckedChanged(CompoundButton compoundButton, boolean b) {
-                if (b) {
-                    rules.add(new Rule30());
-                }else{
-                    if (rules.size()>25){
-                        rules.remove(rules.size()-1);
-                    }
-                }
-            }
-        });
-        return true;
-    }
-
-
 
 
     //    RULE
@@ -770,15 +812,16 @@ public class MainActivity extends AppCompatActivity {
      */
     class Rule24 extends Rule {
         public List<String> listAmdem = Arrays.asList(amdem2.split(" "));
+
         @Override
         public boolean checkInvalid(String x) {
-            if (x.length()>2 && x.charAt(0) == 'r'){
+            if (x.length() > 2 && x.charAt(0) == 'r') {
                 String a = x.substring(1, 3);
                 if (listAmdem.contains(a)) {
                     return true;
                 }
             }
-            if (x.length() > 3  && x.charAt(0) == 'g' && x.charAt(1) == 'i'){
+            if (x.length() > 3 && x.charAt(0) == 'g' && x.charAt(1) == 'i') {
                 String a = x.substring(2, 4);
                 if (listAmdem.contains(a)) {
                     return true;
@@ -796,8 +839,14 @@ public class MainActivity extends AppCompatActivity {
         public boolean checkInvalid(String x) {
             String tmp = "";
             for (int i = 0; i < x.length(); i++) {
-                if (!phuam.contains("" + x.charAt(i))) {
-                    tmp = x.substring(i, x.length());
+                char a = x.charAt(i);
+                if (!phuam.contains("" + a)) {
+                    if (i == 1 && a == 'i' && x.charAt(0) == 'g') {
+                        continue;
+                    } else {
+                        tmp = x.substring(i, x.length());
+                    }
+
                     break;
                 }
             }
